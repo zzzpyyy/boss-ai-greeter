@@ -181,4 +181,4 @@ npm run build
 
 ## License
 
-暂未声明 License。
+MIT
