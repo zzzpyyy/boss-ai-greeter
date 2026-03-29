@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Boss AI Greeter",
+  "version": "1.0.0",
+  "description": "上传简历、提取JD并生成打招呼内容",
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": [
+    "https://www.zhipin.com/*",
+    "https://api.openai.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.zhipin.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
