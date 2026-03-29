@@ -25,6 +25,10 @@ async function ensureContentScriptReady(tabId: number) {
   }
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 function getResumeFileType(file: File) {
   const lowerName = file.name.toLowerCase();
 
@@ -277,16 +281,38 @@ export default function App() {
 
     try {
       const tabId = await getCurrentTabId();
-      const response = await chrome.tabs.sendMessage(tabId, {
-        type: "FILL_GREETING",
-        greeting
+      await ensureContentScriptReady(tabId);
+
+      setMessage("正在打开沟通页面...");
+      const openResponse = await chrome.tabs.sendMessage(tabId, {
+        type: "OPEN_COMMUNICATION"
       });
 
-      if (!response?.ok) {
-        throw new Error(response?.error || "填入失败");
+      if (!openResponse?.ok) {
+        throw new Error(openResponse?.error || "无法进入沟通页面");
       }
 
-      setMessage("已填入输入框，请手动确认发送");
+      let lastError = "填入失败";
+
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        await sleep(attempt === 0 ? 1200 : 600);
+        await ensureContentScriptReady(tabId);
+
+        setMessage("正在填入沟通输入框...");
+        const response = await chrome.tabs.sendMessage(tabId, {
+          type: "FILL_GREETING",
+          greeting
+        });
+
+        if (response?.ok) {
+          setMessage("已自动进入沟通页并填入输入框，请手动确认发送");
+          return;
+        }
+
+        lastError = response?.error || lastError;
+      }
+
+      throw new Error(lastError);
     } catch (error) {
       setMessage(`填入失败: ${String(error)}`);
     }
@@ -436,7 +462,6 @@ export default function App() {
 
         <div className="actions">
           <button disabled={!greeting} onClick={handleCopyGreeting}>复制</button>
-          <button disabled={!greeting} onClick={handleFillGreeting}>填入输入框</button>
         </div>
       </section>
 
